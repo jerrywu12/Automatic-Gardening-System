@@ -9,6 +9,13 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 //#define CH3 1   // Connect Digital Pin  on Arduino to CH3 on Relay Module
 //#define LCDBacklight 13   // TODO: Not able to do it with current sainSmart LCD board, it's using vcc instead of digital pin for power supply
 
+// Button Index
+#define buttonUp     1
+#define buttonDown   2
+#define buttonRight  0
+#define buttonLeft   3
+#define buttonSelect 4
+
 // Keys
 int adc_key_val[5] = {30, 150, 360, 535, 760 };
 int NUM_KEYS = 5;
@@ -22,7 +29,7 @@ int menuWateringIndex = 0;
 int menuAirIndex = 0;
 int menuLightIndex = 0;
 
-// Init system ON duratino
+// Init
 int initDuration = 5;
 bool firstSession = true;
 
@@ -40,7 +47,8 @@ long waterPumpOffDurationDay = 0;
 long waterPumpOnDurationNight = 0;
 long waterPumpOffDurationNight = 0;
 
-// FIXME: use dictionary instead of array
+#define kWateringOn  0
+#define kWateringOff 1
 long wateringMenu[] = {waterPumpOnDuration,
                        waterPumpOffDuration
                       };
@@ -54,6 +62,7 @@ long airPumpOnDurationDay = 0;
 long airPumpOffDurationDay = 0;
 long airPumpOnDurationNight = 0;
 long airPumpOffDurationNight = 0;
+
 long airMenu[] = {airPumpOnDuration,
                   airPumpOffDuration
                  };
@@ -75,8 +84,8 @@ int currentMinute = 59;
 
 // System Time Settings
 int menuTimeIndex = 0;
-int currentTime[6] = {currentMonth, currentDay, currentYear, currentHour, currentMinute, 0};
-String currentTimeStr[] = {"Month", "Day", "Year", "Hour ", "Minute ", "Set Time"};
+int currentTime[] = {currentMonth, currentDay, currentYear, currentHour, currentMinute};
+String currentTimeStr[] = {"Month", "Day", "Year", "Hour ", "Minute "};
 
 
 void setup() {
@@ -118,7 +127,7 @@ void loop() {
   lcd.setCursor(0, 1);
 
   // System Init
-  if (!isTimeSet() && oldkey == -1) {
+  if (!isSystemTimeSet() && oldkey == -1) {
     showTimeSettings();
   }
 
@@ -130,8 +139,8 @@ void loop() {
     int durationOn = 2;
     int durationOff = 30;
 
-    wateringMenu[0] = waterPumpOnDurationDay = setMin(durationOn);
-    wateringMenu[1] = waterPumpOffDurationDay = setMin(durationOff);
+    wateringMenu[kWateringOn] = waterPumpOnDurationDay = setMin(durationOn);
+    wateringMenu[kWateringOff] = waterPumpOffDurationDay = setMin(durationOff);
 
     airMenu[0] = airPumpOnDurationDay = setMin(durationOn);
     airMenu[1] = airPumpOffDurationDay = setMin(durationOff);
@@ -142,16 +151,16 @@ void loop() {
   // Night Time Override - 11pm ~ 8am
   if (currentHour < 8 || currentHour > 23) {
     
-    wateringMenu[0] = waterPumpOnDurationNight;
-    wateringMenu[1] = waterPumpOffDurationNight;
+    wateringMenu[kWateringOn] = waterPumpOnDurationNight;
+    wateringMenu[kWateringOff] = waterPumpOffDurationNight;
 
     airMenu[0] = airPumpOnDurationNight;
     airMenu[1] = airPumpOffDurationNight;
   }
   else {
 
-    wateringMenu[0] = waterPumpOnDurationDay;
-    wateringMenu[1] = waterPumpOffDurationDay;
+    wateringMenu[kWateringOn] = waterPumpOnDurationDay;
+    wateringMenu[kWateringOff] = waterPumpOffDurationDay;
 
     airMenu[0] = airPumpOnDurationDay;
     airMenu[1] = airPumpOffDurationDay;
@@ -179,35 +188,29 @@ void loop() {
 
         oldkey = key;
 
-        if (!isTimeSet()) {
+        if (!isSystemTimeSet()) {
           loopTimeSettings(key);
         }
         else
         {
           switch (key) {
-
-            // Right
-            case 0:
+            case buttonRight:
               subMenuSelection(1);
               break;
 
-            // Up
-            case 1:
+            case buttonUp:
               menuAction(true);
               break;
 
-            // Down
-            case 2:
+            case buttonDown:
               menuAction(false);
               break;
 
-            // Left
-            case 3:
+            case buttonLeft:
               subMenuSelection(-1);
               break;
 
-            // Menu Selection
-            case 4:
+            case buttonSelect:
               selectMenu(loopItems(mainMenuIndex, 3, 1));
               break;
 
@@ -229,7 +232,7 @@ void loop() {
 
     // update clock
     if (mainMenuIndex == 0) {
-      if (isTimeSet()) {
+      if (isSystemTimeSet()) {
         printHomeMenuStatus();
       }
       else {
@@ -260,6 +263,10 @@ int get_key(unsigned int input)
   return k;
 }
 
+/*
+ * Menu Selection 
+ */
+ 
 // Select Menu
 void selectMenu(int selectIndex)
 {
@@ -295,7 +302,11 @@ void selectMenu(int selectIndex)
   }
 }
 
-bool isTimeSet()
+/*
+ * System Time
+ */
+
+bool isSystemTimeSet()
 {
   if (timeStatus() == 0) {
     return false;
@@ -309,47 +320,27 @@ void loopTimeSettings(int buttonIndex)
 
   switch (buttonIndex) {
 
-    case 0: // Right
+    case buttonRight: // Right
       menuTimeIndex = loopItems(menuTimeIndex, totalItems, 1);
-
-      if (menuTimeIndex == totalItems - 1) {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Save Setting");
-      }
-      else {
-        showTimeSettings();
-      }
+      showTimeSettings();
       break;
 
-    case 3: // Left
+    case buttonLeft: // Left
       menuTimeIndex = loopItems(menuTimeIndex, totalItems, -1);
-
-      if (menuTimeIndex == totalItems - 1) {
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Save Setting");
-      }
-      else {
-        showTimeSettings();
-      }
-      break;
-
-    case 1: // Up
-      if (menuTimeIndex != 5) {
-        currentTime[menuTimeIndex] = setTimeValue(currentTime[menuTimeIndex], 1);
-      }
       showTimeSettings();
       break;
 
-    case 2: // Down
-      if (menuTimeIndex != 5) {
+    case buttonUp: // Up
+      currentTime[menuTimeIndex] = setTimeValue(currentTime[menuTimeIndex], 1);
+      showTimeSettings();
+      break;
+
+    case buttonDown: // Down
         currentTime[menuTimeIndex] = setTimeValue(currentTime[menuTimeIndex], -1);
-      }
       showTimeSettings();
       break;
 
-    case 4:
+    case buttonSelect:
       saveTimeSetting();
       break;
     default:
@@ -464,7 +455,7 @@ void printHomeMenuStatus()
 
 void printClockTime()
 {
-  if (!isTimeSet()) {
+  if (!isSystemTimeSet()) {
     return;
   }
 
