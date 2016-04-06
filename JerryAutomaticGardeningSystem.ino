@@ -25,9 +25,11 @@ int oldkey = -1;
 
 // Menu Index
 int mainMenuIndex = 0;
-int menuWateringIndex = 0;
-int menuAirIndex = 0;
-int menuLightIndex = 0;
+
+// Sub-Menu Index
+int subMenuWateringIndex = 0;
+int subMenuAirIndex = 0;
+int subMenuLightIndex = 0;
 
 // Init
 int initDuration = 5;
@@ -63,6 +65,8 @@ long airPumpOffDurationDay = 0;
 long airPumpOnDurationNight = 0;
 long airPumpOffDurationNight = 0;
 
+#define kAiringOn  0
+#define kAiringOff 1
 long airMenu[] = {airPumpOnDuration,
                   airPumpOffDuration
                  };
@@ -75,7 +79,7 @@ String airMenuStr[] = {"ON Duration", "OFF Duration"};
 // Timer
 unsigned long timeRef = 0;
 
-// System Time
+// Default System Time
 int currentMonth = 1;
 int currentDay = 1;
 int currentYear = 2016;
@@ -104,7 +108,7 @@ void setup() {
   lcd.begin(16, 2);
 
   lcd.clear();
-  
+
   // Set init state
   turnOnWaterPump();
   turnOnAirPump();
@@ -142,29 +146,29 @@ void loop() {
     wateringMenu[kWateringOn] = waterPumpOnDurationDay = setMin(durationOn);
     wateringMenu[kWateringOff] = waterPumpOffDurationDay = setMin(durationOff);
 
-    airMenu[0] = airPumpOnDurationDay = setMin(durationOn);
-    airMenu[1] = airPumpOffDurationDay = setMin(durationOff);
+    airMenu[kAiringOn] = airPumpOnDurationDay = setMin(durationOn);
+    airMenu[kAiringOff] = airPumpOffDurationDay = setMin(durationOff);
 
     firstSession = false;
   }
 
   // Night Time Override - 11pm ~ 8am
-  if (currentHour < 8 || currentHour > 23) {
-
-    wateringMenu[kWateringOn] = waterPumpOnDurationNight;
-    wateringMenu[kWateringOff] = waterPumpOffDurationNight;
-
-    airMenu[0] = airPumpOnDurationNight;
-    airMenu[1] = airPumpOffDurationNight;
-  }
-  else {
-
-    wateringMenu[kWateringOn] = waterPumpOnDurationDay;
-    wateringMenu[kWateringOff] = waterPumpOffDurationDay;
-
-    airMenu[0] = airPumpOnDurationDay;
-    airMenu[1] = airPumpOffDurationDay;
-  }
+  //  if (currentHour < 8 || currentHour > 23) {
+  //
+  //    wateringMenu[kWateringOn] = waterPumpOnDurationNight;
+  //    wateringMenu[kWateringOff] = waterPumpOffDurationNight;
+  //
+  //    airMenu[kAiringOn] = airPumpOnDurationNight;
+  //    airMenu[kAiringOff] = airPumpOffDurationNight;
+  //  }
+  //  else {
+  //
+  //    wateringMenu[kWateringOn] = waterPumpOnDurationDay;
+  //    wateringMenu[kWateringOff] = waterPumpOffDurationDay;
+  //
+  //    airMenu[kAiringOn] = airPumpOnDurationDay;
+  //    airMenu[kAiringOff] = airPumpOffDurationDay;
+  //  }
 
   // set up systems
   toggleWaterPump();
@@ -211,7 +215,7 @@ void loop() {
               break;
 
             case buttonSelect:
-              selectMenu(loopItems(mainMenuIndex, 3, 1));
+              selectMainMenu(loopItems(mainMenuIndex, 3, 1));
               break;
 
             default:
@@ -228,7 +232,7 @@ void loop() {
     timeRef = millis();
 
     // switch back to home menu (currently clock)
-    selectMenu(0);
+    selectMainMenu(0);
 
     // update clock
     if (mainMenuIndex == 0) {
@@ -267,8 +271,7 @@ int get_key(unsigned int input)
    Menu Selection
 */
 
-// Select Menu
-void selectMenu(int selectIndex)
+void selectMainMenu(int selectIndex)
 {
   mainMenuIndex = selectIndex;
 
@@ -316,29 +319,17 @@ bool isSystemTimeSet()
 
 void loopTimeSettings(int buttonIndex)
 {
-        Serial.print("button index: ");
-      Serial.println(buttonIndex);
-                  Serial.print("init menuTimeIndex index: ");
-      Serial.println(menuTimeIndex);
-      
   int totalItems = (sizeof(menuSystemTimeList) / sizeof(int));
 
-                  Serial.print("totalItems: ");
-      Serial.println(totalItems);
-      
   switch (buttonIndex) {
 
     case buttonRight: // Right
       menuTimeIndex = loopItems(menuTimeIndex, totalItems, 1);
-            Serial.print("Right menuTimeIndex index: ");
-      Serial.println(menuTimeIndex);
       showTimeSettings();
       break;
 
     case buttonLeft: // Left
       menuTimeIndex = loopItems(menuTimeIndex, totalItems, -1);
-            Serial.print("Left menuTimeIndex index: ");
-      Serial.println(menuTimeIndex);
       showTimeSettings();
       break;
 
@@ -573,7 +564,7 @@ void switchWateringMenu(int directionDelta)
 {
   int totalItems = (sizeof(wateringMenu) / sizeof(long));
 
-  menuWateringIndex = loopItems(menuWateringIndex, totalItems, directionDelta);
+  subMenuWateringIndex = loopItems(subMenuWateringIndex, totalItems, directionDelta);
 
   printWateringTime();
 }
@@ -583,22 +574,22 @@ void printWateringTime()
   lcd.clear();
 
   lcd.setCursor(0, 0);
-  lcd.print(wateringMenuStr[menuWateringIndex]);
+  lcd.print(wateringMenuStr[subMenuWateringIndex]);
 
   lcd.setCursor(0, 1);
-  lcd.print(convertTimeToString(wateringMenu[menuWateringIndex]));
+  lcd.print(convertTimeToString(wateringMenu[subMenuWateringIndex]));
 }
 
 void addWateringTime(long timeValue)
 {
-  if (wateringMenu[menuWateringIndex] + timeValue >= 0) {
-    wateringMenu[menuWateringIndex] += timeValue;
+  if (wateringMenu[subMenuWateringIndex] + timeValue >= 0) {
+    wateringMenu[subMenuWateringIndex] += timeValue;
   }
   else {
-    wateringMenu[menuWateringIndex] = 0;
+    wateringMenu[subMenuWateringIndex] = 0;
   }
 
-  waterPumpOnDurationDay = wateringMenu[menuWateringIndex];
+  waterPumpOnDurationDay = wateringMenu[subMenuWateringIndex];
 }
 
 void turnOnWaterPump() {
@@ -615,20 +606,16 @@ void turnOffWaterPump() {
 
 void toggleWaterPump()
 {
-  //  if (lastWaterPumpOnTime <= 0) {
-  //    lastWaterPumpOnTime = millis();
-  //  }
-
   long timeLapsed = millis() - lastWaterPumpOnTime;
 
   if (!isWatering) {
-    if (timeLapsed > wateringMenu[1]) {
+    if (timeLapsed > wateringMenu[kWateringOff]) {
       turnOnWaterPump();
       lastWaterPumpOnTime = millis();
     }
   }
   else {
-    if (timeLapsed > wateringMenu[0]) {
+    if (timeLapsed > wateringMenu[kWateringOn]) {
       turnOffWaterPump();
       lastWaterPumpOnTime = millis();
     }
@@ -643,7 +630,7 @@ void switchAirMenu(int directionDelta)
 {
   int totalItems = (sizeof(airMenu) / sizeof(long));
 
-  menuAirIndex = loopItems(menuAirIndex, totalItems, directionDelta);
+  subMenuAirIndex = loopItems(subMenuAirIndex, totalItems, directionDelta);
 
   printAirTime();
 }
@@ -653,10 +640,10 @@ void printAirTime()
   lcd.clear();
 
   lcd.setCursor(0, 0);
-  lcd.print(airMenuStr[menuAirIndex]);
+  lcd.print(airMenuStr[subMenuAirIndex]);
 
   lcd.setCursor(0, 1);
-  lcd.print(convertTimeToString(airMenu[menuAirIndex]));
+  lcd.print(convertTimeToString(airMenu[subMenuAirIndex]));
 }
 
 void addAirTime(long timeValue)
@@ -664,14 +651,14 @@ void addAirTime(long timeValue)
   Serial.print("add timeValue: ");
   Serial.println(timeValue);
 
-  if (airMenu[menuAirIndex] + timeValue >= 0) {
-    airMenu[menuAirIndex] += timeValue;
+  if (airMenu[subMenuAirIndex] + timeValue >= 0) {
+    airMenu[subMenuAirIndex] += timeValue;
   }
   else {
-    airMenu[menuAirIndex] = 0;
+    airMenu[subMenuAirIndex] = 0;
   }
 
-  airPumpOnDurationDay = airMenu[menuAirIndex];
+  airPumpOnDurationDay = airMenu[subMenuAirIndex];
 }
 
 void turnOnAirPump() {
@@ -688,20 +675,16 @@ void turnOffAirPump() {
 
 void toggleAirPump()
 {
-  //  if (lastAirPumpOnTime <= 0) {
-  //    lastAirPumpOnTime = millis();
-  //  }
-
   long timeLapsed = millis() - lastAirPumpOnTime;
 
   if (!isAiring) {
-    if (timeLapsed > airMenu[1]) {
+    if (timeLapsed > airMenu[kAiringOff]) {
       turnOnAirPump();
       lastAirPumpOnTime = millis();
     }
   }
   else {
-    if (timeLapsed > airMenu[0]) {
+    if (timeLapsed > airMenu[kAiringOn]) {
       turnOffAirPump();
       lastAirPumpOnTime = millis();
     }
