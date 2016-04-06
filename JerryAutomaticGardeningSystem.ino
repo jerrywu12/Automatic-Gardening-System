@@ -84,8 +84,8 @@ int currentMinute = 59;
 
 // System Time Settings
 int menuTimeIndex = 0;
-int currentTime[] = {currentMonth, currentDay, currentYear, currentHour, currentMinute};
-String currentTimeStr[] = {"Month", "Day", "Year", "Hour ", "Minute "};
+int menuSystemTimeList[] = {currentMonth, currentDay, currentYear, currentHour, currentMinute};
+String menuSystemTimeListStr[] = {"Month", "Day", "Year", "Hour ", "Minute "};
 
 
 void setup() {
@@ -103,6 +103,8 @@ void setup() {
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
 
+  lcd.clear();
+  
   // Set init state
   turnOnWaterPump();
   turnOnAirPump();
@@ -119,8 +121,6 @@ void setup() {
 
 
 void loop() {
-
-  //digitalWrite(LCDBacklight, LOW);
 
   // set the cursor to column 0, line 1
   // (note: line 1 is the second row, since counting begins with 0):
@@ -150,7 +150,7 @@ void loop() {
 
   // Night Time Override - 11pm ~ 8am
   if (currentHour < 8 || currentHour > 23) {
-    
+
     wateringMenu[kWateringOn] = waterPumpOnDurationNight;
     wateringMenu[kWateringOff] = waterPumpOffDurationNight;
 
@@ -264,9 +264,9 @@ int get_key(unsigned int input)
 }
 
 /*
- * Menu Selection 
- */
- 
+   Menu Selection
+*/
+
 // Select Menu
 void selectMenu(int selectIndex)
 {
@@ -303,8 +303,8 @@ void selectMenu(int selectIndex)
 }
 
 /*
- * System Time
- */
+   System Time
+*/
 
 bool isSystemTimeSet()
 {
@@ -316,32 +316,50 @@ bool isSystemTimeSet()
 
 void loopTimeSettings(int buttonIndex)
 {
-  int totalItems = (sizeof(currentTime) / sizeof(int));
+        Serial.print("button index: ");
+      Serial.println(buttonIndex);
+                  Serial.print("init menuTimeIndex index: ");
+      Serial.println(menuTimeIndex);
+      
+  int totalItems = (sizeof(menuSystemTimeList) / sizeof(int));
 
+                  Serial.print("totalItems: ");
+      Serial.println(totalItems);
+      
   switch (buttonIndex) {
 
     case buttonRight: // Right
       menuTimeIndex = loopItems(menuTimeIndex, totalItems, 1);
+            Serial.print("Right menuTimeIndex index: ");
+      Serial.println(menuTimeIndex);
       showTimeSettings();
       break;
 
     case buttonLeft: // Left
       menuTimeIndex = loopItems(menuTimeIndex, totalItems, -1);
+            Serial.print("Left menuTimeIndex index: ");
+      Serial.println(menuTimeIndex);
       showTimeSettings();
       break;
 
     case buttonUp: // Up
-      currentTime[menuTimeIndex] = setTimeValue(currentTime[menuTimeIndex], 1);
+      menuSystemTimeList[menuTimeIndex] = setTimeValue(menuSystemTimeList[menuTimeIndex], 1);
       showTimeSettings();
       break;
 
     case buttonDown: // Down
-        currentTime[menuTimeIndex] = setTimeValue(currentTime[menuTimeIndex], -1);
+      menuSystemTimeList[menuTimeIndex] = setTimeValue(menuSystemTimeList[menuTimeIndex], -1);
       showTimeSettings();
       break;
 
     case buttonSelect:
-      saveTimeSetting();
+      if (menuTimeIndex == totalItems - 1) {
+        saveTimeSetting();
+      }
+      else {
+        menuTimeIndex = loopItems(menuTimeIndex, totalItems, 1);
+        showTimeSettings();
+      }
       break;
     default:
       break;
@@ -417,10 +435,10 @@ void showTimeSettings()
 
   lcd.setCursor(0, 0);
   lcd.print("Set ");
-  lcd.print(currentTimeStr[menuTimeIndex]);
+  lcd.print(menuSystemTimeListStr[menuTimeIndex]);
 
   lcd.setCursor(0, 1);
-  lcd.print(currentTime[menuTimeIndex]);
+  lcd.print(menuSystemTimeList[menuTimeIndex]);
 }
 
 void saveTimeSetting()
@@ -695,7 +713,7 @@ void toggleAirPump()
    Convenient Functions
 */
 
-int loopItems(int index, int totalItems, bool delta)
+int loopItems(int index, int totalItems, int delta)
 {
   int newIndex = index + delta;
 
