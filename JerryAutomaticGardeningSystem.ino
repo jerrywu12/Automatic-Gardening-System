@@ -83,7 +83,6 @@ String airMenuStr[] = {"ON Duration", "OFF Duration"};
 
 // Timer
 unsigned long timeRef = 0;
-unsigned long timeRefTemperature = 0;
 
 // Default System Time
 int currentMonth = 1;
@@ -235,19 +234,13 @@ void loop() {
     }
   }
 
-  // Reading temperature or humidity takes about 250 milliseconds!
-  if ((millis() - timeRefTemperature) > setSec(5)) {
-
-    timeRefTemperature = millis();
-
-    printTemperature();
-    //    printHumidity();
-  }
-
   // update clock every 1 minute
   if ((millis() - timeRef) > setMin(1)) {
 
     timeRef = millis();
+
+    // Temperature+Humidity
+    printTemperature();
 
     // switch back to home menu (currently clock)
     selectMainMenu(0);
