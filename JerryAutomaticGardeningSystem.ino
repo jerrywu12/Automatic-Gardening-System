@@ -1,13 +1,18 @@
 #include <LiquidCrystal.h>
 #include <Time.h>
+#include "DHT.h"    // Thermometer+Humidity sensors
 
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
-#define CH1 3   // Connect Digital Pin  on Arduino to CH1 on Relay Module
-#define CH2 2   // Connect Digital Pin  on Arduino to CH2 on Relay Module
-//#define CH3 1   // Connect Digital Pin  on Arduino to CH3 on Relay Module
+#define CHWatering 3   // Connect Digital Pin  on Arduino to CHWatering on Relay Module
+#define CHThermo   12   // Connect Digital Pin 
+//#define CH1 1   // Connect Digital Pin  on Arduino to CH3 on Relay Module
 //#define LCDBacklight 13   // TODO: Not able to do it with current sainSmart LCD board, it's using vcc instead of digital pin for power supply
+
+// Thermometer+Humidity
+#define DHTTYPE DHT11   // DHT 11
+DHT dht(CHThermo, DHTTYPE);
 
 // Button Index
 #define buttonUp     1
@@ -78,6 +83,7 @@ String airMenuStr[] = {"ON Duration", "OFF Duration"};
 
 // Timer
 unsigned long timeRef = 0;
+unsigned long timeRefTemperature = 0;
 
 // Default System Time
 int currentMonth = 1;
@@ -99,9 +105,9 @@ void setup() {
   Serial.begin(9600);
 
   // Setup all the Pins
-  pinMode(CH1, OUTPUT);  // Water pump
-  pinMode(CH2, OUTPUT);  // Air pump
-  //  pinMode(CH3, OUTPUT);  // Light
+  pinMode(CHWatering, OUTPUT);  // Water pump
+  pinMode(CHThermo, OUTPUT);  // Air pump
+  //  pinMode(CH1, OUTPUT);  // Light
   //pinMode(LCDBacklight, OUTPUT);
 
   // set up the LCD's number of columns and rows:
@@ -112,6 +118,8 @@ void setup() {
   // Set init state
   turnOnWaterPump();
   turnOnAirPump();
+
+  dht.begin();
 
   lastWaterPumpOnTime = millis();
   lastAirPumpOnTime = millis();
@@ -140,7 +148,7 @@ void loop() {
 
     Serial.println("first session");
 
-    int durationOn = 2;
+    int durationOn = 3;
     int durationOff = 30;
 
     wateringMenu[kWateringOn] = waterPumpOnDurationDay = setMin(durationOn);
@@ -174,6 +182,7 @@ void loop() {
   toggleWaterPump();
   toggleAirPump();
 
+  // Keys
   adc_key_in = analogRead(0); // read the value from the sensor
   key = get_key(adc_key_in); // convert into key press
   //  if (key != oldkey) // if keypress is detected
@@ -226,6 +235,15 @@ void loop() {
     }
   }
 
+  // Reading temperature or humidity takes about 250 milliseconds!
+  if ((millis() - timeRefTemperature) > setSec(5)) {
+
+    timeRefTemperature = millis();
+
+    printTemperature();
+    //    printHumidity();
+  }
+
   // update clock every 1 minute
   if ((millis() - timeRef) > setMin(1)) {
 
@@ -247,6 +265,75 @@ void loop() {
     // Turn off display after 1 min
     //    lcd.noDisplay();  //FIXME: suppose turn off the backlight, but this only turn off the display
   }
+}
+
+void printTemperature()
+{
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+  else {
+
+    Serial.print("Humidity: ");
+    Serial.print(h);
+    Serial.print("%\t");
+
+    // Read temperature as Celsius (the default)
+    float t = dht.readTemperature();
+    if (isnan(t)) {
+      Serial.println("Failed to read from DHT sensor!");
+    }
+    else {
+      // Compute heat index in Celsius (isFahreheit = false)
+      float hic = dht.computeHeatIndex(t, h, false);
+
+      Serial.print("Temperature: ");
+      Serial.print(t);
+      Serial.print("C \t");
+
+      Serial.print("Heat index: ");
+      Serial.print(hic);
+      Serial.println("C ");
+    }
+
+    //    // Read temperature as Fahrenheit (isFahrenheit = true)
+    //    float f = dht.readTemperature(true);
+    //    if (isnan(f)) {
+    //      Serial.println("Failed to read from DHT sensor!");
+    //    }
+    //    else {
+    //      // Compute heat index in Celsius (isFahreheit = false)
+    //      float hif = dht.computeHeatIndex(f, h);
+    //
+    //      Serial.print("Temperature: ");
+    //      Serial.print(f);
+    //      Serial.print("F\t");
+    //
+    //      Serial.print("Heat index: ");
+    //      Serial.print(hif);
+    //      Serial.println("F");
+    //    }
+  }
+}
+
+void printHumidity()
+{
+  float h = dht.readHumidity();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  Serial.print("Humidity: ");
+  Serial.print(h);
+  Serial.print("%\t");
 }
 
 // Convert ADC value to key number
@@ -344,6 +431,7 @@ void loopTimeSettings(int buttonIndex)
       break;
 
     case buttonSelect:
+    default:
       if (menuTimeIndex == totalItems - 1) {
         saveTimeSetting();
       }
@@ -351,8 +439,6 @@ void loopTimeSettings(int buttonIndex)
         menuTimeIndex = loopItems(menuTimeIndex, totalItems, 1);
         showTimeSettings();
       }
-      break;
-    default:
       break;
   }
 }
@@ -594,13 +680,13 @@ void addWateringTime(long timeValue)
 
 void turnOnWaterPump() {
   Serial.println("Water pump On");
-  digitalWrite(CH1, relay_On);
+  digitalWrite(CHWatering, relay_On);
   isWatering = true;
 }
 
 void turnOffWaterPump() {
   Serial.println("Water pump Off");
-  digitalWrite(CH1, relay_Off);
+  digitalWrite(CHWatering, relay_Off);
   isWatering = false;
 }
 
@@ -663,13 +749,13 @@ void addAirTime(long timeValue)
 
 void turnOnAirPump() {
   Serial.println("Air pump On");
-  digitalWrite(CH2, relay_On);
+  digitalWrite(CHWatering, relay_On);
   isAiring = true;
 }
 
 void turnOffAirPump() {
   Serial.println("Air pump Off");
-  digitalWrite(CH2, relay_Off);
+  digitalWrite(CHWatering, relay_Off);
   isAiring = false;
 }
 
