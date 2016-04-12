@@ -5,9 +5,9 @@
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
-#define CHWatering 3   // Connect Digital Pin  on Arduino to CHWatering on Relay Module
+#define CHWatering  3   // Connect Digital Pin  on Arduino to CHWatering on Relay Module
 #define CHThermo   12   // Connect Digital Pin 
-//#define CH1 1   // Connect Digital Pin  on Arduino to CH3 on Relay Module
+#define CHLight     2   // Connect Digital Pin  on Arduino to CH3 on Relay Module
 //#define LCDBacklight 13   // TODO: Not able to do it with current sainSmart LCD board, it's using vcc instead of digital pin for power supply
 
 // Thermometer+Humidity
@@ -43,7 +43,6 @@ bool firstSession = true;
 // Status
 bool isWatering = false;
 bool isAiring = false;
-bool isLighting = false;
 
 // Water pump
 long lastWaterPumpOnTime = 0;
@@ -53,7 +52,6 @@ long waterPumpOnDurationDay = 0;
 long waterPumpOffDurationDay = 0;
 long waterPumpOnDurationNight = 0;
 long waterPumpOffDurationNight = 0;
-
 #define kWateringOn  0
 #define kWateringOff 1
 long wateringMenu[] = {waterPumpOnDuration,
@@ -69,13 +67,16 @@ long airPumpOnDurationDay = 0;
 long airPumpOffDurationDay = 0;
 long airPumpOnDurationNight = 0;
 long airPumpOffDurationNight = 0;
-
 #define kAiringOn  0
 #define kAiringOff 1
 long airMenu[] = {airPumpOnDuration,
                   airPumpOffDuration
                  };
 String airMenuStr[] = {"ON Duration", "OFF Duration"};
+
+// Light
+int lightOnTime = 500;   // 5:00
+int lightOffTime = 2200; // 10:00
 
 // Relay Sign
 #define relay_On  0
@@ -89,7 +90,7 @@ int currentMonth = 1;
 int currentDay = 1;
 int currentYear = 2016;
 int currentHour = 10;
-int currentMinute = 59;
+int currentMinute = 00;
 
 // System Time Settings
 int menuTimeIndex = 0;
@@ -106,7 +107,7 @@ void setup() {
   // Setup all the Pins
   pinMode(CHWatering, OUTPUT);  // Water pump
   pinMode(CHThermo, OUTPUT);  // Air pump
-  //  pinMode(CH1, OUTPUT);  // Light
+  pinMode(CHLight, OUTPUT);  // Light
   //pinMode(LCDBacklight, OUTPUT);
 
   // set up the LCD's number of columns and rows:
@@ -117,6 +118,7 @@ void setup() {
   // Set init state
   turnOnWaterPump();
   turnOnAirPump();
+  turnOnLight();
 
   dht.begin();
 
@@ -238,6 +240,9 @@ void loop() {
   if ((millis() - timeRef) > setMin(1)) {
 
     timeRef = millis();
+
+    // Light
+    switchLight();
 
     // Temperature+Humidity
     printTemperature();
@@ -768,6 +773,49 @@ void toggleAirPump()
       lastAirPumpOnTime = millis();
     }
   }
+}
+
+
+/*
+   Light
+*/
+
+void switchLight()
+{
+  long currentTime = formatCurrentTime();
+
+Serial.print("current time: ");
+Serial.println(currentTime);
+Serial.print("on time: ");
+Serial.println(lightOnTime);
+Serial.print("off time: ");
+Serial.println(lightOffTime);
+
+  // hourOn < hourOff. ex. 0:00 off -> 8:00 on -> 22:00 off
+  if (currentTime >= lightOnTime && currentTime < lightOffTime) {
+    turnOnLight();
+  }
+  else {
+    return turnOffLight();
+  }
+}
+
+long formatCurrentTime()
+{
+  time_t t = now();
+  return hour(t) * 100 + minute(t);
+}
+
+void turnOnLight()
+{
+  Serial.println("Light On");
+  digitalWrite(CHLight, relay_On);
+}
+
+void turnOffLight()
+{
+  Serial.println("Light Off");
+  digitalWrite(CHLight, relay_Off);
 }
 
 
