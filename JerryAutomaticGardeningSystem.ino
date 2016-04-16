@@ -1,7 +1,10 @@
-#include <LiquidCrystal.h>
-#include <Time.h>
-#include "DHT.h"    // Thermometer+Humidity sensors
-#include <SparkFunTSL2561.h>
+#include <LiquidCrystal.h>    // LCD control
+
+#include <Time.h>             // System time
+
+#include "DHT.h"              // Thermometer+Humidity sensor
+
+#include <SparkFunTSL2561.h>  // Light Lux sensor
 #include <Wire.h>
 
 // initialize the library with the numbers of the interface pins
