@@ -87,7 +87,7 @@ String airMenuStr[] = {"ON Duration", "OFF Duration"};
 // Light
 int lightOnTime = 500;   // 5:00
 int lightOffTime = 2200; // 10:00
-double lightSwitchLuxThreshold = 4000;
+double lightSwitchLuxThreshold = 4500;
 
 // Relay Sign
 #define relay_On  0
@@ -801,7 +801,7 @@ void switchLight()
 
     double currentEnvironmentLuxValue = getLuxValue();
     // Save electricity by turn off the light if environment is bright enough
-    if (currentEnvironmentLuxValue > lightSwitchLuxThreshold) {
+    if (currentEnvironmentLuxValue > lightSwitchLuxThreshold || currentEnvironmentLuxValue == 0) {
       Serial.println("Light saving mode");
       turnOffLight();
     }
@@ -1007,10 +1007,11 @@ double getLuxValue()
   {
     // getData() returned true, communication was successful
 
-    //    Serial.print("data0: ");
-    //    Serial.print(data0);
-    //    Serial.print(" data1: ");
-    //    Serial.print(data1);
+    Serial.print("data0: ");
+    Serial.print(data0);
+    Serial.print(" data1: ");
+    Serial.print(data1);
+    Serial.print("   ");
 
     // To calculate lux, pass all your settings and readings
     // to the getLux() function.
@@ -1032,7 +1033,14 @@ double getLuxValue()
     Serial.println(lux);
 
     if (!good) {
-      Serial.println("WARNING!!! Light lux sensor is not working properly.)");
+      // if sensor saturated
+      if (data0 > 20000 || data1 > 10000) {
+        Serial.println("Light lux sensor is saturated.)");
+        return 10000;
+      }
+      else {
+        Serial.println("WARNING!!! Light lux sensor is not working properly.)");
+      }
     }
     else {
       return lux;
