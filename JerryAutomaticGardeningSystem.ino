@@ -87,7 +87,7 @@ String airMenuStr[] = {"ON Duration", "OFF Duration"};
 // Light
 int lightOnTime = 500;   // 5:00
 int lightOffTime = 2200; // 10:00
-double lightSwitchLuxThreshold = 4500;
+double lightSwitchLuxThreshold = 4000;
 
 // Relay Sign
 #define relay_On  0
@@ -814,20 +814,17 @@ void switchLight()
   }
 }
 
-long formatCurrentTime()
-{
+long formatCurrentTime() {
   time_t t = now();
   return hour(t) * 100 + minute(t);
 }
 
-void turnOnLight()
-{
+void turnOnLight() {
   Serial.println("Light On");
   digitalWrite(CHLight, relay_On);
 }
 
-void turnOffLight()
-{
+void turnOffLight() {
   Serial.println("Light Off");
   digitalWrite(CHLight, relay_Off);
 }
