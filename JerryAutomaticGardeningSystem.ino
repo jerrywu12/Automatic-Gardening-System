@@ -135,8 +135,7 @@ void setup()
 
 void loop()
 {
-  // set the cursor to column 0, line 1
-  // (note: line 1 is the second row, since counting begins with 0):
+  // set the cursor to column 0, line 1. (note: line 1 is the second row, since counting begins with 0):
   lcd.setCursor(0, 1);
 
   // System Init
@@ -144,19 +143,21 @@ void loop()
     showTimeSettings();
   }
 
-  // Set Default duration for timers
+  // Set default values
   if (firstSession) {
 
     Serial.println("First session");
+    Serial.println("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
 
-    int durationOn = 20;
-    int durationOff = 20;
+    // Default duration values
+    int defaultDurationOn = 20;
+    int defaultDurationOff = 20;
 
-    wateringMenu[kWateringOn] = setMin(durationOn);
-    wateringMenu[kWateringOff] = setMin(durationOff);
+    wateringMenu[kWateringOn] = setMin(defaultDurationOn);
+    wateringMenu[kWateringOff] = setMin(defaultDurationOff);
 
-    airMenu[kAiringOn] = setMin(durationOn);
-    airMenu[kAiringOff] = setMin(durationOff);
+    airMenu[kAiringOn] = setMin(defaultDurationOn);
+    airMenu[kAiringOff] = setMin(defaultDurationOff);
 
     firstSession = false;
   }
@@ -166,62 +167,12 @@ void loop()
   toggleAirPump();
 
   // Keys
-  adc_key_in = analogRead(0); // read the value from the sensor
-  key = get_key(adc_key_in); // convert into key press
-  //  if (key != oldkey) // if keypress is detected
-  {
-    delay(200); // wait for debounce time
-    adc_key_in = analogRead(0); // read the value from the sensor
-    key = get_key(adc_key_in); // convert into key press
-    //    if (key != oldkey)
-    {
-      if (key >= 0)
-      {
-        //        lcd.display();
+  menuKeyAction();
 
-        // reset timeRef if user is interacting with device
-        timeRef = millis();
-
-        oldkey = key;
-
-        if (!isSystemTimeSet()) {
-          loopTimeSettings(key);
-        }
-        else
-        {
-          switch (key) {
-            case buttonRight:
-              subMenuSelection(1);
-              break;
-
-            case buttonUp:
-              menuAction(true);
-              break;
-
-            case buttonDown:
-              menuAction(false);
-              break;
-
-            case buttonLeft:
-              subMenuSelection(-1);
-              break;
-
-            case buttonSelect:
-              selectMainMenu(loopItems(mainMenuIndex, 3, 1));
-              break;
-
-            default:
-              break;
-          }
-        }
-      }
-    }
-  }
-
-  // update clock every 1 minute
+  // updates - every 1 min
   if ((millis() - timeRef) > setMin(1)) {
 
-    Serial.print("Time: ");
+    Serial.print("Time(HHMM): ");
     Serial.println(formattedCurrentTime());
 
     timeRef = millis();
@@ -309,6 +260,62 @@ void printTemperature()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void menuKeyAction()
+{
+  // Keys
+  adc_key_in = analogRead(0); // read the value from the sensor
+  key = get_key(adc_key_in); // convert into key press
+  //  if (key != oldkey) // if keypress is detected
+  {
+    delay(200); // wait for debounce time
+    adc_key_in = analogRead(0); // read the value from the sensor
+    key = get_key(adc_key_in); // convert into key press
+    //    if (key != oldkey)
+    {
+      if (key >= 0)
+      {
+        //        lcd.display();
+
+        // reset timeRef if user is interacting with device
+        timeRef = millis();
+
+        oldkey = key;
+
+        if (!isSystemTimeSet()) {
+          loopTimeSettings(key);
+        }
+        else
+        {
+          switch (key) {
+            case buttonRight:
+              subMenuSelection(1);
+              break;
+
+            case buttonUp:
+              menuAction(true);
+              break;
+
+            case buttonDown:
+              menuAction(false);
+              break;
+
+            case buttonLeft:
+              subMenuSelection(-1);
+              break;
+
+            case buttonSelect:
+              selectMainMenu(loopItems(mainMenuIndex, 3, 1));
+              break;
+
+            default:
+              break;
+          }
+        }
+      }
+    }
+  }
+}
 
 // Convert ADC value to key number
 int get_key(unsigned int input)
@@ -898,7 +905,7 @@ void setupLightLuxSensor()
   unsigned char ID;
   // Get factory ID from sensor:
   if (luxSensor.getID(ID)) {
-    //    Serial.print("Lux Sensor - factory ID: 0X");
+    Serial.println("Lux Sensor - factory ID: 0X");
     //    Serial.print(ID, HEX);
     //    Serial.println(", should be 0X5X");
   }
@@ -980,7 +987,7 @@ double getLuxValue()
     good = luxSensor.getLux(luxGain, luxDelay, data0, data1, lux);
 
     // Print out the results:
-    Serial.print("lux: ");
+    Serial.print("Lux: ");
     Serial.println(lux);
 
     if (!good) {
