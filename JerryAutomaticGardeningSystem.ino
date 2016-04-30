@@ -97,6 +97,7 @@ int currentMinute = 00;
 
 // System Time Settings
 int menuTimeIndex = 0;
+bool isSettingTime = true;
 int menuSystemTimeList[] = {currentMonth, currentDay, currentYear, currentHour, currentMinute};
 String menuSystemTimeListStr[] = {"Month", "Day", "Year", "Hour ", "Minute "};
 
@@ -348,6 +349,12 @@ void selectMainMenu(int selectIndex)
 
   lcd.setCursor(0, 0);
 
+  if (isSettingTime) {
+    saveTimeSetting();
+    mainMenuIndex = 0;
+    return;
+  }
+
   switch (selectIndex) {
 
     // Current Time
@@ -384,13 +391,16 @@ bool isSystemTimeSet()
   if (timeStatus() == 0) {
     return false;
   }
+
   return true;
 }
 
 void loopTimeSettings(int buttonIndex)
 {
+  isSettingTime = true;
+  
   int totalItems = (sizeof(menuSystemTimeList) / sizeof(int));
-
+  
   switch (buttonIndex) {
 
     case buttonRight: // Right
@@ -415,6 +425,7 @@ void loopTimeSettings(int buttonIndex)
 
     case buttonSelect:
     default:
+      // Save time setting if hits the last object index
       if (menuTimeIndex == totalItems - 1) {
         saveTimeSetting();
       }
@@ -509,6 +520,9 @@ void saveTimeSetting()
 
   lcd.setCursor(0, 0);
   lcd.print("Time Saved!!");
+  Serial.println("Time Saved!!");
+  isSettingTime = false;
+  menuTimeIndex = 0;
   delay(1000);
 
   printHomeMenuStatus();
@@ -573,14 +587,16 @@ long formattedCurrentTime() {
    Menu Action
 */
 
-// Sub-menu
+// Sub-menu (RIGHT and LEFT keys)
 void subMenuSelection(int indexChange)
 {
   switch (mainMenuIndex) {
 
     // Home Menu - Current time
     case 0:
-      printHomeMenuStatus();
+      //      printHomeMenuStatus();
+      isSettingTime = true;
+      loopTimeSettings(key);
       break;
 
     // Water pump
@@ -598,13 +614,15 @@ void subMenuSelection(int indexChange)
   }
 }
 
+// UP and DOWN keys
 void menuAction(bool up)
 {
   switch (mainMenuIndex) {
 
     // Home Menu - Current Time
     case 0:
-      printHomeMenuStatus();
+      //      printHomeMenuStatus();
+      loopTimeSettings(key);
       break;
 
     // Water pump
@@ -789,9 +807,10 @@ void switchLight()
     }
   }
   else {
-    Serial.print("Nighttime mode - current time: ");
-    Serial.println(currentTime);
-    return turnOffLight();
+    if (!isSettingTime) {
+      Serial.println("Nighttime mode");
+      turnOffLight();
+    }
   }
 }
 
