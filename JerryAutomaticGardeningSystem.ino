@@ -58,10 +58,6 @@ bool isAiring = false;
 long lastWaterPumpOnTime = 0;
 long waterPumpOnDuration = 0;
 long waterPumpOffDuration = 0;
-long waterPumpOnDurationDay = 0;
-long waterPumpOffDurationDay = 0;
-long waterPumpOnDurationNight = 0;
-long waterPumpOffDurationNight = 0;
 #define kWateringOn  0
 #define kWateringOff 1
 long wateringMenu[] = {waterPumpOnDuration,
@@ -73,10 +69,6 @@ String wateringMenuStr[] = {"ON Duration", "OFF Duration"};
 long lastAirPumpOnTime = 0;
 long airPumpOnDuration = 0;
 long airPumpOffDuration = 0;
-long airPumpOnDurationDay = 0;
-long airPumpOffDurationDay = 0;
-long airPumpOnDurationNight = 0;
-long airPumpOffDurationNight = 0;
 #define kAiringOn  0
 #define kAiringOff 1
 long airMenu[] = {airPumpOnDuration,
@@ -86,8 +78,8 @@ String airMenuStr[] = {"ON Duration", "OFF Duration"};
 
 // Light
 int lightOnTime = 500;   // 5:00
-int lightOffTime = 2200; // 10:00
-double lightSwitchLuxThreshold = 4500;
+int lightOffTime = 2000; // 10:00
+double lightSwitchLuxThreshold = 4000;
 
 // Relay Sign
 #define relay_On  0
@@ -137,12 +129,6 @@ void setup() {
 
   lastWaterPumpOnTime = millis();
   lastAirPumpOnTime = millis();
-
-  waterPumpOnDurationNight = setMin(2);
-  waterPumpOffDurationNight = setHr(2);
-
-  airPumpOnDurationNight = setMin(2);
-  airPumpOffDurationNight = setHr(2);
 }
 
 
@@ -162,35 +148,17 @@ void loop() {
 
     Serial.println("first session");
 
-    int durationOn = 3;
-    int durationOff = 30;
+    int durationOn = 20;
+    int durationOff = 20;
 
-    wateringMenu[kWateringOn] = waterPumpOnDurationDay = setMin(durationOn);
-    wateringMenu[kWateringOff] = waterPumpOffDurationDay = setMin(durationOff);
+    wateringMenu[kWateringOn] = setMin(durationOn);
+    wateringMenu[kWateringOff] = setMin(durationOff);
 
-    airMenu[kAiringOn] = airPumpOnDurationDay = setMin(durationOn);
-    airMenu[kAiringOff] = airPumpOffDurationDay = setMin(durationOff);
+    airMenu[kAiringOn] = setMin(durationOn);
+    airMenu[kAiringOff] = setMin(durationOff);
 
     firstSession = false;
   }
-
-  // Night Time Override - 11pm ~ 8am
-  //  if (currentHour < 8 || currentHour > 23) {
-  //
-  //    wateringMenu[kWateringOn] = waterPumpOnDurationNight;
-  //    wateringMenu[kWateringOff] = waterPumpOffDurationNight;
-  //
-  //    airMenu[kAiringOn] = airPumpOnDurationNight;
-  //    airMenu[kAiringOff] = airPumpOffDurationNight;
-  //  }
-  //  else {
-  //
-  //    wateringMenu[kWateringOn] = waterPumpOnDurationDay;
-  //    wateringMenu[kWateringOff] = waterPumpOffDurationDay;
-  //
-  //    airMenu[kAiringOn] = airPumpOnDurationDay;
-  //    airMenu[kAiringOff] = airPumpOffDurationDay;
-  //  }
 
   // set up systems
   toggleWaterPump();
@@ -685,8 +653,6 @@ void addWateringTime(long timeValue)
   else {
     wateringMenu[subMenuWateringIndex] = 0;
   }
-
-  waterPumpOnDurationDay = wateringMenu[subMenuWateringIndex];
 }
 
 void turnOnWaterPump() {
@@ -754,8 +720,6 @@ void addAirTime(long timeValue)
   else {
     airMenu[subMenuAirIndex] = 0;
   }
-
-  airPumpOnDurationDay = airMenu[subMenuAirIndex];
 }
 
 void turnOnAirPump() {
@@ -795,7 +759,7 @@ void toggleAirPump()
 
 void switchLight()
 {
-  long currentTime = formatCurrentTime();
+  long currentTime = formattedCurrentTime();
   // hourOn < hourOff. ex. 0:00 off -> 8:00 on -> 22:00 off
   if (currentTime >= lightOnTime && currentTime < lightOffTime) {
 
@@ -810,11 +774,13 @@ void switchLight()
     }
   }
   else {
+    Serial.print("Nighttime mode - current time: ");
+    Serial.println(currentTime);
     return turnOffLight();
   }
 }
 
-long formatCurrentTime() {
+long formattedCurrentTime() {
   time_t t = now();
   return hour(t) * 100 + minute(t);
 }
@@ -1007,11 +973,11 @@ double getLuxValue()
   {
     // getData() returned true, communication was successful
 
-    Serial.print("data0: ");
-    Serial.print(data0);
-    Serial.print(" data1: ");
-    Serial.print(data1);
-    Serial.print("   ");
+    //    Serial.print("data0: ");
+    //    Serial.print(data0);
+    //    Serial.print(" data1: ");
+    //    Serial.print(data1);
+    //    Serial.print("   ");
 
     // To calculate lux, pass all your settings and readings
     // to the getLux() function.
@@ -1035,20 +1001,19 @@ double getLuxValue()
     if (!good) {
       // if sensor saturated
       if (data0 > 20000 || data1 > 10000) {
-        Serial.println("Light lux sensor is saturated.)");
+        Serial.println("Light lux sensor is saturated.");
         return 10000;
       }
       else {
-        Serial.println("WARNING!!! Light lux sensor is not working properly.)");
+        Serial.println("WARNING!!! Light lux sensor is not working properly.");
       }
     }
     else {
       return lux;
     }
   }
-  else
-  {
-    Serial.println("WARNING!!! Light lux sensor is not working properly.)");
+  else {
+    Serial.println("WARNING!!! Light lux sensor is not working properly.");
     // getData() returned false because of an I2C error, inform the user.
     byte error = luxSensor.getError();
     printError(error);
