@@ -473,7 +473,7 @@ int setTimeValue(int timeValue, int deltaValue)
 
     // Hour
     case 3:
-      if (newValue <= 0) {
+      if (newValue < 0) {
         newValue = 23;
       }
       else if (newValue >= 24) {
