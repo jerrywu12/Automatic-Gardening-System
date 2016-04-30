@@ -59,8 +59,8 @@ unsigned long lastWaterPumpOnTime = 0;
 #define kWateringOn  0
 #define kWateringOff 1
 unsigned long wateringMenu[] = {0,
-                       0
-                      };
+                                0
+                               };
 String wateringMenuStr[] = {"ON Duration", "OFF Duration"};
 
 // Air pump
@@ -68,8 +68,8 @@ unsigned long lastAirPumpOnTime = 0;
 #define kAiringOn  0
 #define kAiringOff 1
 unsigned long airMenu[] = {0,
-                  0
-                 };
+                           0
+                          };
 String airMenuStr[] = {"ON Duration", "OFF Duration"};
 
 // Light
@@ -84,18 +84,11 @@ double lightSwitchLuxThreshold = 4000;
 // Timer
 unsigned long timeRef = 0;
 
-// Default System Time
-int currentMonth = 1;
-int currentDay = 1;
-int currentYear = 2016;
-int currentHour = 10;
-int currentMinute = 00;
-
 // System Time Settings
 int menuTimeIndex = 0;
 bool isSettingTime = true;
-int menuSystemTimeList[] = {currentMonth, currentDay, currentYear, currentHour, currentMinute};
-String menuSystemTimeListStr[] = {"Month", "Day", "Year", "Hour ", "Minute "};
+int systemTimeList[] = {1, 1, 2016, 10, 0};
+String systemTimeListStr[] = {"Month", "Day", "Year", "Hour ", "Minute "};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -394,9 +387,9 @@ bool isSystemTimeSet()
 void adjustTimeSettings(int buttonIndex)
 {
   isSettingTime = true;
-  
-  int totalItems = (sizeof(menuSystemTimeList) / sizeof(int));
-  
+
+  int totalItems = (sizeof(systemTimeList) / sizeof(int));
+
   switch (buttonIndex) {
 
     case buttonRight: // Right
@@ -410,12 +403,12 @@ void adjustTimeSettings(int buttonIndex)
       break;
 
     case buttonUp: // Up
-      menuSystemTimeList[menuTimeIndex] = setTimeValue(menuSystemTimeList[menuTimeIndex], 1);
+      setTimeValue(systemTimeList[menuTimeIndex], 1);
       showTimeSettings();
       break;
 
     case buttonDown: // Down
-      menuSystemTimeList[menuTimeIndex] = setTimeValue(menuSystemTimeList[menuTimeIndex], -1);
+      setTimeValue(systemTimeList[menuTimeIndex], -1);
       showTimeSettings();
       break;
 
@@ -433,7 +426,7 @@ void adjustTimeSettings(int buttonIndex)
   }
 }
 
-int setTimeValue(int timeValue, int deltaValue)
+void setTimeValue(int timeValue, int deltaValue)
 {
   int newValue = timeValue + deltaValue;
 
@@ -447,7 +440,6 @@ int setTimeValue(int timeValue, int deltaValue)
       else if (newValue > 12) {
         newValue = 1;
       }
-      currentMonth = newValue;
       break;
 
     // Day
@@ -456,7 +448,6 @@ int setTimeValue(int timeValue, int deltaValue)
         newValue = 1;
       }
       // TODO: determine the day of the month
-      currentDay = newValue;
       break;
 
     // Year
@@ -464,7 +455,6 @@ int setTimeValue(int timeValue, int deltaValue)
       if (newValue < 1970) {
         newValue = 1970;
       }
-      currentYear = newValue;
       break;
 
     // Hour
@@ -475,7 +465,6 @@ int setTimeValue(int timeValue, int deltaValue)
       else if (newValue >= 24) {
         newValue = 0;
       }
-      currentHour = newValue;
       break;
 
     // Minute
@@ -486,14 +475,13 @@ int setTimeValue(int timeValue, int deltaValue)
       else if (newValue >= 59) {
         newValue = 0;
       }
-      currentMinute = newValue;
       break;
 
     default:
       break;
   }
 
-  return newValue;
+  systemTimeList[menuTimeIndex] = newValue;
 }
 
 void showTimeSettings()
@@ -502,15 +490,16 @@ void showTimeSettings()
 
   lcd.setCursor(0, 0);
   lcd.print("Set ");
-  lcd.print(menuSystemTimeListStr[menuTimeIndex]);
+  lcd.print(systemTimeListStr[menuTimeIndex]);
 
   lcd.setCursor(0, 1);
-  lcd.print(menuSystemTimeList[menuTimeIndex]);
+  lcd.print(systemTimeList[menuTimeIndex]);
 }
 
 void saveTimeSetting()
 {
-  setTime(currentHour, currentMinute, 0, currentDay, currentMonth, currentYear);
+  //setTime(hour, minute, second, day, month, year);
+  setTime(systemTimeList[3], systemTimeList[4], 0, systemTimeList[1], systemTimeList[0], systemTimeList[2]);
 
   lcd.clear();
 
@@ -697,7 +686,7 @@ void turnOffWaterPump() {
 
 void toggleWaterPump()
 {
-  long timeLapsed = millis() - lastWaterPumpOnTime;
+  unsigned long timeLapsed = millis() - lastWaterPumpOnTime;
 
   if (!isWatering) {
     if (timeLapsed > wateringMenu[kWateringOff]) {
@@ -870,27 +859,27 @@ String convertTimeToString(long totalms)
   String timeStr = "";
 
   if (currentDay > 0) {
-//    Serial.print(currentDay);
-//    Serial.print(" day ");
+    //    Serial.print(currentDay);
+    //    Serial.print(" day ");
     timeStr = String(timeStr + currentDay + " day ");
   }
   if (hr > 0) {
-//    Serial.print(hr);
-//    Serial.print("h ");
+    //    Serial.print(hr);
+    //    Serial.print("h ");
     timeStr = String(timeStr + hr + "h ");
   }
   if (minutes > 0) {
-//    Serial.print(minutes);
-//    Serial.print("m ");
+    //    Serial.print(minutes);
+    //    Serial.print("m ");
     timeStr = String(timeStr + minutes + "m ");
   }
   if (sec > 0) {
-//    Serial.print(sec);
-//    Serial.print("s ");
+    //    Serial.print(sec);
+    //    Serial.print("s ");
     timeStr = String(timeStr + sec + "s");
   }
 
-//  Serial.println("");
+  //  Serial.println("");
 
   return timeStr;
 }
@@ -919,7 +908,7 @@ void setupLightLuxSensor()
   unsigned char ID;
   // Get factory ID from sensor:
   if (luxSensor.getID(ID)) {
-//    Serial.println("Lux Sensor - factory ID: 0X");
+    //    Serial.println("Lux Sensor - factory ID: 0X");
     //    Serial.print(ID, HEX);
     //    Serial.println(", should be 0X5X");
   }
