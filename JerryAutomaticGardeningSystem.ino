@@ -55,30 +55,26 @@ bool isWatering = false;
 bool isAiring = false;
 
 // Water pump
-long lastWaterPumpOnTime = 0;
-long waterPumpOnDuration = 0;
-long waterPumpOffDuration = 0;
+unsigned long lastWaterPumpOnTime = 0;
 #define kWateringOn  0
 #define kWateringOff 1
-long wateringMenu[] = {waterPumpOnDuration,
-                       waterPumpOffDuration
+unsigned long wateringMenu[] = {0,
+                       0
                       };
 String wateringMenuStr[] = {"ON Duration", "OFF Duration"};
 
 // Air pump
-long lastAirPumpOnTime = 0;
-long airPumpOnDuration = 0;
-long airPumpOffDuration = 0;
+unsigned long lastAirPumpOnTime = 0;
 #define kAiringOn  0
 #define kAiringOff 1
-long airMenu[] = {airPumpOnDuration,
-                  airPumpOffDuration
+unsigned long airMenu[] = {0,
+                  0
                  };
 String airMenuStr[] = {"ON Duration", "OFF Duration"};
 
 // Light
-int lightOnTime = 500;   // 5:00
-int lightOffTime = 2000; // 10:00
+int lightOnTime = 500;   // 5:00 am
+int lightOffTime = 2000; // 10:00 pm
 double lightSwitchLuxThreshold = 4000;
 
 // Relay Sign
