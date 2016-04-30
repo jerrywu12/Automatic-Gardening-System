@@ -105,7 +105,7 @@ String menuSystemTimeListStr[] = {"Month", "Day", "Year", "Hour ", "Minute "};
 
 void setup()
 {
-  Serial.println("System Reset");
+  Serial.println(F("System Reset"));
 
   Serial.begin(9600);
 
@@ -147,8 +147,8 @@ void loop()
   // Set default values
   if (firstSession) {
 
-    Serial.println("First session");
-    Serial.println("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+    Serial.println(F("First session"));
+    Serial.println(F("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n"));
 
     // Default duration values
     int defaultDurationOn = 20;
@@ -173,7 +173,7 @@ void loop()
   // updates - every 1 min
   if ((millis() - timeRef) > setMin(1)) {
 
-    Serial.print("Time(HHMM): ");
+    Serial.print(F("Time(HHMM): "));
     Serial.println(formattedCurrentTime());
 
     timeRef = millis();
@@ -193,14 +193,14 @@ void loop()
         printHomeMenuStatus();
       }
       else {
-        loopTimeSettings(key);
+        adjustTimeSettings(key);
       }
     }
 
     // Turn off display after 1 min
     //    lcd.noDisplay();  //FIXME: suppose turn off the backlight, but this only turn off the display
 
-    Serial.println("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+    Serial.println(F("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n"));
   }
 }
 
@@ -213,29 +213,29 @@ void printTemperature()
 
   // Check if any reads failed and exit early (to try again).
   if (isnan(h)) {
-    Serial.println("Failed to read from DHT sensor!");
+    Serial.println(F("Failed to read from DHT sensor!"));
     return;
   }
   else {
 
-    Serial.print("Humidity: ");
+    Serial.print(F("Humidity: "));
     Serial.print(h);
     Serial.print("%\t");
 
     // Read temperature as Celsius (the default)
     float t = dht.readTemperature();
     if (isnan(t)) {
-      Serial.println("Failed to read from DHT sensor!");
+      Serial.println(F("Failed to read from DHT sensor!"));
     }
     else {
       // Compute heat index in Celsius (isFahreheit = false)
       float hic = dht.computeHeatIndex(t, h, false);
 
-      Serial.print("Temperature: ");
+      Serial.print(F("Temperature: "));
       Serial.print(t);
       Serial.print("C \t");
 
-      Serial.print("Heat index: ");
+      Serial.print(F("Heat index: "));
       Serial.print(hic);
       Serial.println("C ");
     }
@@ -284,7 +284,7 @@ void menuKeyAction()
         oldkey = key;
 
         if (!isSystemTimeSet()) {
-          loopTimeSettings(key);
+          adjustTimeSettings(key);
         }
         else
         {
@@ -395,7 +395,7 @@ bool isSystemTimeSet()
   return true;
 }
 
-void loopTimeSettings(int buttonIndex)
+void adjustTimeSettings(int buttonIndex)
 {
   isSettingTime = true;
   
@@ -519,8 +519,8 @@ void saveTimeSetting()
   lcd.clear();
 
   lcd.setCursor(0, 0);
-  lcd.print("Time Saved!!");
-  Serial.println("Time Saved!!");
+  lcd.print(F("Time Saved!!"));
+  Serial.println(F("Time Saved!!"));
   isSettingTime = false;
   menuTimeIndex = 0;
   delay(1000);
@@ -596,7 +596,7 @@ void subMenuSelection(int indexChange)
     case 0:
       //      printHomeMenuStatus();
       isSettingTime = true;
-      loopTimeSettings(key);
+      adjustTimeSettings(key);
       break;
 
     // Water pump
@@ -622,7 +622,7 @@ void menuAction(bool up)
     // Home Menu - Current Time
     case 0:
       //      printHomeMenuStatus();
-      loopTimeSettings(key);
+      adjustTimeSettings(key);
       break;
 
     // Water pump
@@ -688,13 +688,13 @@ void addWateringTime(long timeValue)
 }
 
 void turnOnWaterPump() {
-  Serial.println("Water pump On");
+  Serial.println(F("Water pump On"));
   digitalWrite(CHWatering, relay_On);
   isWatering = true;
 }
 
 void turnOffWaterPump() {
-  Serial.println("Water pump Off");
+  Serial.println(F("Water pump Off"));
   digitalWrite(CHWatering, relay_Off);
   isWatering = false;
 }
@@ -744,7 +744,7 @@ void printAirTime()
 
 void addAirTime(long timeValue)
 {
-  Serial.print("add timeValue: ");
+  Serial.print(F("add timeValue: "));
   Serial.println(timeValue);
 
   if (airMenu[subMenuAirIndex] + timeValue >= 0) {
@@ -756,13 +756,13 @@ void addAirTime(long timeValue)
 }
 
 void turnOnAirPump() {
-  Serial.println("Air pump On");
+  Serial.println(F("Air pump On"));
   digitalWrite(CHWatering, relay_On);
   isAiring = true;
 }
 
 void turnOffAirPump() {
-  Serial.println("Air pump Off");
+  Serial.println(F("Air pump Off"));
   digitalWrite(CHWatering, relay_Off);
   isAiring = false;
 }
@@ -799,7 +799,7 @@ void switchLight()
     double currentEnvironmentLuxValue = getLuxValue();
     // Save electricity by turn off the light if environment is bright enough
     if (currentEnvironmentLuxValue > lightSwitchLuxThreshold || currentEnvironmentLuxValue == 0) {
-      Serial.println("Light saving mode");
+      Serial.println(F("Light saving mode"));
       turnOffLight();
     }
     else {
@@ -808,19 +808,18 @@ void switchLight()
   }
   else {
     if (!isSettingTime) {
-      Serial.println("Nighttime mode");
       turnOffLight();
     }
   }
 }
 
 void turnOnLight() {
-  Serial.println("Light On");
+  Serial.println(F("Light On"));
   digitalWrite(CHLight, relay_On);
 }
 
 void turnOffLight() {
-  Serial.println("Light Off");
+  Serial.println(F("Light Off"));
   digitalWrite(CHLight, relay_Off);
 }
 
@@ -875,27 +874,27 @@ String convertTimeToString(long totalms)
   String timeStr = "";
 
   if (currentDay > 0) {
-    Serial.print(currentDay);
-    Serial.print(" day ");
+//    Serial.print(currentDay);
+//    Serial.print(" day ");
     timeStr = String(timeStr + currentDay + " day ");
   }
   if (hr > 0) {
-    Serial.print(hr);
-    Serial.print("h ");
+//    Serial.print(hr);
+//    Serial.print("h ");
     timeStr = String(timeStr + hr + "h ");
   }
   if (minutes > 0) {
-    Serial.print(minutes);
-    Serial.print("m ");
+//    Serial.print(minutes);
+//    Serial.print("m ");
     timeStr = String(timeStr + minutes + "m ");
   }
   if (sec > 0) {
-    Serial.print(sec);
-    Serial.print("s ");
+//    Serial.print(sec);
+//    Serial.print("s ");
     timeStr = String(timeStr + sec + "s");
   }
 
-  Serial.println("");
+//  Serial.println("");
 
   return timeStr;
 }
@@ -924,13 +923,13 @@ void setupLightLuxSensor()
   unsigned char ID;
   // Get factory ID from sensor:
   if (luxSensor.getID(ID)) {
-    Serial.println("Lux Sensor - factory ID: 0X");
+//    Serial.println("Lux Sensor - factory ID: 0X");
     //    Serial.print(ID, HEX);
     //    Serial.println(", should be 0X5X");
   }
   // Most library commands will return true if communications was successful and false if there was a problem. You can ignore this returned value, or check whether a command worked correctly and retrieve an error code:
   else {
-    Serial.println("Error: failed to get lux sensor ID");
+    Serial.println(F("Error: failed to get lux sensor ID"));
     byte error = luxSensor.getError();
     printError(error);
   }
@@ -963,7 +962,7 @@ void setupLightLuxSensor()
   // After the specified time, you can retrieve the result from the sensor.
   // Once a measurement occurs, another integration period will start.
 
-  Serial.print("init ");
+  Serial.print(F("init "));
   getLuxValue();
 }
 
@@ -1006,17 +1005,17 @@ double getLuxValue()
     good = luxSensor.getLux(luxGain, luxDelay, data0, data1, lux);
 
     // Print out the results:
-    Serial.print("Lux: ");
+    Serial.print(F("Lux: "));
     Serial.println(lux);
 
     if (!good) {
       // if sensor saturated
       if (data0 > 20000 || data1 > 10000) {
-        Serial.println("Light lux sensor is saturated.");
+        Serial.println(F("Light lux sensor is saturated."));
         return 10000;
       }
       else {
-        Serial.println("ERROR!!! Light lux sensor is not working properly.");
+        Serial.println(F("ERROR!!! Light lux sensor is not working properly."));
       }
     }
     else {
@@ -1024,7 +1023,7 @@ double getLuxValue()
     }
   }
   else {
-    Serial.println("ERROR!!! Light lux sensor is not working properly.");
+    Serial.println(F("ERROR!!! Light lux sensor is not working properly."));
     // getData() returned false because of an I2C error, inform the user.
     byte error = luxSensor.getError();
     printError(error);
@@ -1035,29 +1034,29 @@ double getLuxValue()
 // If there's an I2C error, this function will print out an explanation.
 void printError(byte error)
 {
-  Serial.print("I2C error: ");
+  Serial.print(F("I2C error: "));
   Serial.print(error, DEC);
   Serial.print(", ");
 
   switch (error)
   {
     case 0:
-      Serial.println("success");
+      Serial.println(F("success"));
       break;
     case 1:
-      Serial.println("data too long for transmit buffer");
+      Serial.println(F("data too long for transmit buffer"));
       break;
     case 2:
-      Serial.println("received NACK on address (disconnected?)");
+      Serial.println(F("received NACK on address (disconnected?)"));
       break;
     case 3:
-      Serial.println("received NACK on data");
+      Serial.println(F("received NACK on data"));
       break;
     case 4:
-      Serial.println("other error");
+      Serial.println(F("other error"));
       break;
     default:
-      Serial.println("unknown error");
+      Serial.println(F("unknown error"));
   }
 }
 
