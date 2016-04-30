@@ -18,7 +18,7 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 // SFE_TSL2561
 SFE_TSL2561 luxSensor;
 boolean luxGain;                      // Gain setting, 0 = X1, 1 = X16;
-unsigned int luxDelay;  // Integration ("shutter") time in milliseconds
+unsigned int luxDelay = 0;  // Integration ("shutter") time in milliseconds
 
 // Thermometer+Humidity
 #define DHTTYPE DHT11   // DHT 11
@@ -100,9 +100,10 @@ int menuTimeIndex = 0;
 int menuSystemTimeList[] = {currentMonth, currentDay, currentYear, currentHour, currentMinute};
 String menuSystemTimeListStr[] = {"Month", "Day", "Year", "Hour ", "Minute "};
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void setup() {
-
+void setup()
+{
   Serial.println("System Reset");
 
   Serial.begin(9600);
@@ -132,8 +133,8 @@ void setup() {
 }
 
 
-void loop() {
-
+void loop()
+{
   // set the cursor to column 0, line 1
   // (note: line 1 is the second row, since counting begins with 0):
   lcd.setCursor(0, 1);
@@ -146,7 +147,7 @@ void loop() {
   // Set Default duration for timers
   if (firstSession) {
 
-    Serial.println("first session");
+    Serial.println("First session");
 
     int durationOn = 20;
     int durationOff = 20;
@@ -220,6 +221,9 @@ void loop() {
   // update clock every 1 minute
   if ((millis() - timeRef) > setMin(1)) {
 
+    Serial.print("Time: ");
+    Serial.println(formattedCurrentTime());
+
     timeRef = millis();
 
     // Light
@@ -243,8 +247,12 @@ void loop() {
 
     // Turn off display after 1 min
     //    lcd.noDisplay();  //FIXME: suppose turn off the backlight, but this only turn off the display
+
+    Serial.println("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n");
   }
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void printTemperature()
 {
@@ -300,20 +308,7 @@ void printTemperature()
   }
 }
 
-void printHumidity()
-{
-  float h = dht.readHumidity();
-
-  // Check if any reads failed and exit early (to try again).
-  if (isnan(h)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return;
-  }
-
-  Serial.print("Humidity: ");
-  Serial.print(h);
-  Serial.print("%\t");
-}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Convert ADC value to key number
 int get_key(unsigned int input)
@@ -333,6 +328,7 @@ int get_key(unsigned int input)
   return k;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
    Menu Selection
 */
@@ -371,6 +367,7 @@ void selectMainMenu(int selectIndex)
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
    System Time
 */
@@ -559,6 +556,16 @@ void printClockTime()
   }
 }
 
+long formattedCurrentTime() {
+  time_t t = now();
+  return hour(t) * 100 + minute(t);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+   Menu Action
+*/
+
 // Sub-menu
 void subMenuSelection(int indexChange)
 {
@@ -620,7 +627,7 @@ void menuAction(bool up)
   }
 }
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
    Watering
 */
@@ -685,6 +692,7 @@ void toggleWaterPump()
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
    Airing
 */
@@ -752,7 +760,7 @@ void toggleAirPump()
   }
 }
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
    Light
 */
@@ -780,11 +788,6 @@ void switchLight()
   }
 }
 
-long formattedCurrentTime() {
-  time_t t = now();
-  return hour(t) * 100 + minute(t);
-}
-
 void turnOnLight() {
   Serial.println("Light On");
   digitalWrite(CHLight, relay_On);
@@ -795,7 +798,7 @@ void turnOffLight() {
   digitalWrite(CHLight, relay_Off);
 }
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
    Convenient Functions
 */
@@ -871,14 +874,17 @@ String convertTimeToString(long totalms)
   return timeStr;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+  Lux
+*/
 
 // Setup Light Lux sensor
 void setupLightLuxSensor()
 {
   // Initialize the SFE_TSL2561 library
 
-  // You can pass nothing to luxSensor.begin() for the default I2C address (0x39),
-  // or use one of the following presets if you have changed
+  // You can pass nothing to luxSensor.begin() for the default I2C address (0x39), or use one of the following presets if you have changed
   // the ADDR jumper on the board:
 
   // TSL2561_ADDR_0 address with '0' shorted on board (0x29)
@@ -889,30 +895,23 @@ void setupLightLuxSensor()
 
   luxSensor.begin();
 
-  // Get factory ID from sensor:
-  // (Just for fun, you don't need to do this to operate the sensor)
-
   unsigned char ID;
-
+  // Get factory ID from sensor:
   if (luxSensor.getID(ID)) {
     //    Serial.print("Lux Sensor - factory ID: 0X");
     //    Serial.print(ID, HEX);
     //    Serial.println(", should be 0X5X");
   }
-  // Most library commands will return true if communications was successful,
-  // and false if there was a problem. You can ignore this returned value,
-  // or check whether a command worked correctly and retrieve an error code:
-  else
-  {
+  // Most library commands will return true if communications was successful and false if there was a problem. You can ignore this returned value, or check whether a command worked correctly and retrieve an error code:
+  else {
+    Serial.println("Error: failed to get lux sensor ID");
     byte error = luxSensor.getError();
     printError(error);
   }
 
-  // The light sensor has a default integration time of 402ms,
-  // and a default gain of low (1X).
+  // The light sensor has a default integration time of 402ms, and a default gain of low (1X).
 
-  // If you would like to change either of these, you can
-  // do so using the setTiming() command.
+  // If you would like to change either of these, you can do so using the setTiming() command.
 
   // If luxGain = false (0), device is set to low gain (1X)
   // If luxGain = high (1), device is set to high gain (16X)
@@ -926,8 +925,7 @@ void setupLightLuxSensor()
 
   unsigned char time = 2;
 
-  // setTiming() will set the third parameter (ms) to the
-  // requested integration time in ms (this will be useful later):
+  // setTiming() will set the third parameter (ms) to the requested integration time in ms (this will be useful later):
 
   luxSensor.setTiming(luxGain, time, luxDelay);
 
@@ -945,47 +943,34 @@ void setupLightLuxSensor()
 
 double getLuxValue()
 {
-  // Wait between measurements before retrieving the result
-  // (You can also configure the sensor to issue an interrupt
-  // when measurements are complete)
-
+  // Wait between measurements before retrieving the result (You can also configure the sensor to issue an interrupt when measurements are complete)
   // This sketch uses the TSL2561's built-in integration timer.
-  // You can also perform your own manual integration timing
-  // by setting "time" to 3 (manual) in setTiming(),
-  // then performing a manualStart() and a manualStop() as in the below
-  // commented statements:
+  // You can also perform your own manual integration timing by setting "time" to 3 (manual) in setTiming(),
+  // then performing a manualStart() and a manualStop() as in the below commented statements:
 
-  //  luxDelay = 1000;
+  // luxDelay = 1000;
   // luxSensor.manualStart();
-  delay(luxDelay);
+  // delay(luxDelay);
   // luxSensor.manualStop();
 
   // Once integration is complete, we'll retrieve the data.
-
-  // There are two light sensors on the device, one for visible light
-  // and one for infrared. Both sensors are needed for lux calculations.
-
+  // There are two light sensors on the device, one for visible light and one for infrared. Both sensors are needed for lux calculations.
   // Retrieve the data from the device:
-
   unsigned int data0, data1;
 
+  // getData() returned true, communication was successful
   if (luxSensor.getData(data0, data1))
   {
-    // getData() returned true, communication was successful
-
     //    Serial.print("data0: ");
     //    Serial.print(data0);
     //    Serial.print(" data1: ");
     //    Serial.print(data1);
     //    Serial.print("   ");
 
-    // To calculate lux, pass all your settings and readings
-    // to the getLux() function.
+    // To calculate lux, pass all your settings and readings to the getLux() function.
 
-    // The getLux() function will return 1 if the calculation
-    // was successful, or 0 if one or both of the sensors was
-    // saturated (too much light). If this happens, you can
-    // reduce the integration time and/or gain.
+    // The getLux() function will return 1 if the calculation was successful, or 0 if one or both of the sensors was saturated (too much light).
+    // If this happens, you can reduce the integration time and/or gain.
     // For more information see the hookup guide at: https://learn.sparkfun.com/tutorials/getting-started-with-the-tsl2561-luminosity-sensor
 
     double lux;    // Resulting lux value
@@ -1005,7 +990,7 @@ double getLuxValue()
         return 10000;
       }
       else {
-        Serial.println("WARNING!!! Light lux sensor is not working properly.");
+        Serial.println("ERROR!!! Light lux sensor is not working properly.");
       }
     }
     else {
@@ -1013,7 +998,7 @@ double getLuxValue()
     }
   }
   else {
-    Serial.println("WARNING!!! Light lux sensor is not working properly.");
+    Serial.println("ERROR!!! Light lux sensor is not working properly.");
     // getData() returned false because of an I2C error, inform the user.
     byte error = luxSensor.getError();
     printError(error);
