@@ -140,8 +140,8 @@ void loop()
     Serial.println(F("//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\n"));
 
     // Default duration values
-    int defaultDurationOn = 20;
-    int defaultDurationOff = 20;
+    int defaultDurationOn = 30;
+    int defaultDurationOff = 10;
 
     wateringMenu[kWateringOn] = setMin(defaultDurationOn);
     wateringMenu[kWateringOff] = setMin(defaultDurationOff);
@@ -152,10 +152,6 @@ void loop()
     firstSession = false;
   }
 
-  // set up systems
-  toggleWaterPump();
-  toggleAirPump();
-
   // Keys
   menuKeyAction();
 
@@ -165,6 +161,10 @@ void loop()
     Serial.print(F("Time(HHMM): "));
     Serial.println(formattedCurrentTime());
 
+    // set up systems
+    toggleWaterPump();
+    toggleAirPump();
+    
     timeRef = millis();
 
     // Light
@@ -504,8 +504,8 @@ void saveTimeSetting()
   lcd.clear();
 
   lcd.setCursor(0, 0);
-  lcd.print(F("Time Saved!!"));
-  Serial.println(F("Time Saved!!"));
+  lcd.print(F("Time Settings Saved!!"));
+  Serial.println(F("Time Settings Saved!!"));
   isSettingTime = false;
   menuTimeIndex = 0;
   delay(1000);
@@ -520,10 +520,10 @@ void printHomeMenuStatus()
   lcd.setCursor(0, 0);
   if (isWatering) {
     // TODO: blink the LCD to indicate the action in progress for fun!
-    lcd.print("Watering Plants...");
+    lcd.print(F("Watering Plants..."));
   }
   else {
-    lcd.print("Current Time");
+    lcd.print(F("Current Time"));
   }
 
   lcd.setCursor(0, 1);
@@ -889,7 +889,6 @@ String convertTimeToString(long totalms)
   Lux
 */
 
-// Setup Light Lux sensor
 void setupLightLuxSensor()
 {
   // Initialize the SFE_TSL2561 library
@@ -947,12 +946,13 @@ void setupLightLuxSensor()
   // After the specified time, you can retrieve the result from the sensor.
   // Once a measurement occurs, another integration period will start.
 
-  Serial.print(F("init "));
   getLuxValue();
 }
 
 double getLuxValue()
 {
+  Serial.print(F("getLuxValue. "));
+
   // Wait between measurements before retrieving the result (You can also configure the sensor to issue an interrupt when measurements are complete)
   // This sketch uses the TSL2561's built-in integration timer.
   // You can also perform your own manual integration timing by setting "time" to 3 (manual) in setTiming(),
