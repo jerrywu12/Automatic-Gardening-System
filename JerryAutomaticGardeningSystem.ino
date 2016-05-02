@@ -40,6 +40,7 @@ int oldkey = -1;
 
 // Menu Index
 int mainMenuIndex = 0;
+int totalMenuItems = 4;
 
 // Sub-Menu Index
 int subMenuWateringIndex = 0;
@@ -58,10 +59,10 @@ bool isAiring = false;
 unsigned long lastWaterPumpOnTime = 0;
 #define kWateringOn  0
 #define kWateringOff 1
-unsigned long wateringMenu[] = {0,
-                                0
-                               };
-String wateringMenuStr[] = {"ON Duration", "OFF Duration"};
+unsigned long wateringMenuList[] = {0,
+                                    0
+                                   };
+String wateringMenuStrList[] = {"ON Duration", "OFF Duration"};
 
 // Air pump
 unsigned long lastAirPumpOnTime = 0;
@@ -73,8 +74,15 @@ unsigned long airMenu[] = {0,
 String airMenuStr[] = {"ON Duration", "OFF Duration"};
 
 // Light
-int lightOnTime = 500;   // 5:00 am
-int lightOffTime = 2000; // 10:00 pm
+//int lightOnTime = 500;   // 5:00 am
+//int lightOffTime = 2000; // 10:00 pm
+#define kLightOnTime  0
+#define kLightOffTime 1
+unsigned long lightMenuList[] = {0,    // 5:00 am
+                                 0    // 10:00 pm
+                                };
+String lightMenuStrList[] = {"ON Time", "OFF Time"};
+
 double lightSwitchLuxThreshold = 4000;
 
 // Relay Sign
@@ -143,11 +151,14 @@ void loop()
     int defaultDurationOn = 30;
     int defaultDurationOff = 10;
 
-    wateringMenu[kWateringOn] = setMin(defaultDurationOn);
-    wateringMenu[kWateringOff] = setMin(defaultDurationOff);
+    wateringMenuList[kWateringOn] = setMin(defaultDurationOn);
+    wateringMenuList[kWateringOff] = setMin(defaultDurationOff);
 
     airMenu[kAiringOn] = setMin(defaultDurationOn);
     airMenu[kAiringOff] = setMin(defaultDurationOff);
+
+    lightMenuList[kLightOnTime] = setHr(5) * 100 + setMin(0);
+    lightMenuList[kLightOffTime] = setHr(20) * 100 + setMin(0);
 
     firstSession = false;
   }
@@ -164,7 +175,7 @@ void loop()
     // set up systems
     toggleWaterPump();
     toggleAirPump();
-    
+
     timeRef = millis();
 
     // Light
@@ -193,61 +204,6 @@ void loop()
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void printTemperature()
-{
-  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  float h = dht.readHumidity();
-
-  // Check if any reads failed and exit early (to try again).
-  if (isnan(h)) {
-    Serial.println(F("Failed to read from DHT sensor!"));
-    return;
-  }
-  else {
-
-    Serial.print(F("Humidity: "));
-    Serial.print(h);
-    Serial.print("%\t");
-
-    // Read temperature as Celsius (the default)
-    float t = dht.readTemperature();
-    if (isnan(t)) {
-      Serial.println(F("Failed to read from DHT sensor!"));
-    }
-    else {
-      // Compute heat index in Celsius (isFahreheit = false)
-      float hic = dht.computeHeatIndex(t, h, false);
-
-      Serial.print(F("Temperature: "));
-      Serial.print(t);
-      Serial.print("C \t");
-
-      Serial.print(F("Heat index: "));
-      Serial.print(hic);
-      Serial.println("C ");
-    }
-
-    //    // Read temperature as Fahrenheit (isFahrenheit = true)
-    //    float f = dht.readTemperature(true);
-    //    if (isnan(f)) {
-    //      Serial.println("Failed to read from DHT sensor!");
-    //    }
-    //    else {
-    //      // Compute heat index in Celsius (isFahreheit = false)
-    //      float hif = dht.computeHeatIndex(f, h);
-    //
-    //      Serial.print("Temperature: ");
-    //      Serial.print(f);
-    //      Serial.print("F\t");
-    //
-    //      Serial.print("Heat index: ");
-    //      Serial.print(hif);
-    //      Serial.println("F");
-    //    }
-  }
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -295,7 +251,7 @@ void menuKeyAction()
               break;
 
             case buttonSelect:
-              selectMainMenu(loopItems(mainMenuIndex, 3, 1));
+              selectMainMenu(loopItems(mainMenuIndex, totalMenuItems, 1));
               break;
 
             default:
@@ -363,6 +319,13 @@ void selectMainMenu(int selectIndex)
       lcd.print("Air Pump");
       delay(1000);
       printAirTime();
+      break;
+
+    // Light On/Off Time
+    case 3:
+      lcd.print("Light Source");
+      delay(1000);
+      printLightTime();
       break;
 
     default:
@@ -504,8 +467,8 @@ void saveTimeSetting()
   lcd.clear();
 
   lcd.setCursor(0, 0);
-  lcd.print(F("Time Settings Saved!!"));
-  Serial.println(F("Time Settings Saved!!"));
+  lcd.print(F("Time Saved!!"));
+  Serial.println(F("Time Saved!!"));
   isSettingTime = false;
   menuTimeIndex = 0;
   delay(1000);
@@ -567,6 +530,11 @@ long formattedCurrentTime() {
   return hour(t) * 100 + minute(t);
 }
 
+long formattedCurrentTime(long timeValuems) {
+  time_t t = timeValuems;
+  return hour(t) * 100 + minute(t);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
    Menu Action
@@ -594,6 +562,11 @@ void subMenuSelection(int indexChange)
       switchAirMenu(indexChange);
       break;
 
+    // Light Source
+    case 3:
+      switchLightMenu(indexChange);
+      break;
+
     default:
       break;
   }
@@ -606,7 +579,6 @@ void menuAction(bool up)
 
     // Home Menu - Current Time
     case 0:
-      //      printHomeMenuStatus();
       adjustTimeSettings(key);
       break;
 
@@ -632,10 +604,22 @@ void menuAction(bool up)
       printAirTime();
       break;
 
+    // Light Source
+    case 3:
+      if (up) {
+        addLightTime(setMin(15));
+      }
+      else {
+        addLightTime(setMin(-15));
+      }
+      printLightTime();
+      break;
+
     default:
       break;
   }
 }
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
@@ -644,32 +628,19 @@ void menuAction(bool up)
 
 void switchWateringMenu(int directionDelta)
 {
-  int totalItems = (sizeof(wateringMenu) / sizeof(long));
+  int totalItems = (sizeof(wateringMenuList) / sizeof(long));
 
   subMenuWateringIndex = loopItems(subMenuWateringIndex, totalItems, directionDelta);
 
   printWateringTime();
 }
 
-void printWateringTime()
-{
-  lcd.clear();
-
-  lcd.setCursor(0, 0);
-  lcd.print(wateringMenuStr[subMenuWateringIndex]);
-
-  lcd.setCursor(0, 1);
-  lcd.print(convertTimeToString(wateringMenu[subMenuWateringIndex]));
+void printWateringTime() {
+  printMenuSettings(wateringMenuStrList, wateringMenuList, subMenuWateringIndex);
 }
 
-void addWateringTime(long timeValue)
-{
-  if (wateringMenu[subMenuWateringIndex] + timeValue >= 0) {
-    wateringMenu[subMenuWateringIndex] += timeValue;
-  }
-  else {
-    wateringMenu[subMenuWateringIndex] = 0;
-  }
+void addWateringTime(long timeValue) {
+  addTime(wateringMenuList, subMenuWateringIndex, timeValue);
 }
 
 void turnOnWaterPump() {
@@ -689,13 +660,13 @@ void toggleWaterPump()
   unsigned long timeLapsed = millis() - lastWaterPumpOnTime;
 
   if (!isWatering) {
-    if (timeLapsed > wateringMenu[kWateringOff]) {
+    if (timeLapsed > wateringMenuList[kWateringOff]) {
       turnOnWaterPump();
       lastWaterPumpOnTime = millis();
     }
   }
   else {
-    if (timeLapsed > wateringMenu[kWateringOn]) {
+    if (timeLapsed > wateringMenuList[kWateringOn]) {
       turnOffWaterPump();
       lastWaterPumpOnTime = millis();
     }
@@ -716,28 +687,12 @@ void switchAirMenu(int directionDelta)
   printAirTime();
 }
 
-void printAirTime()
-{
-  lcd.clear();
-
-  lcd.setCursor(0, 0);
-  lcd.print(airMenuStr[subMenuAirIndex]);
-
-  lcd.setCursor(0, 1);
-  lcd.print(convertTimeToString(airMenu[subMenuAirIndex]));
+void printAirTime() {
+  printMenuSettings(airMenuStr, airMenu, subMenuAirIndex);
 }
 
-void addAirTime(long timeValue)
-{
-  Serial.print(F("add timeValue: "));
-  Serial.println(timeValue);
-
-  if (airMenu[subMenuAirIndex] + timeValue >= 0) {
-    airMenu[subMenuAirIndex] += timeValue;
-  }
-  else {
-    airMenu[subMenuAirIndex] = 0;
-  }
+void addAirTime(long timeValue) {
+  addTime(airMenu, subMenuAirIndex, timeValue);
 }
 
 void turnOnAirPump() {
@@ -775,11 +730,81 @@ void toggleAirPump()
    Light
 */
 
+void switchLightMenu(int directionDelta)
+{
+  int totalItems = (sizeof(lightMenuList) / sizeof(long));
+
+  subMenuLightIndex = loopItems(subMenuLightIndex, totalItems, directionDelta);
+
+  printLightTime();
+}
+
+void printLightTime() {
+  printHHMM(lightMenuStrList, lightMenuList, subMenuLightIndex);
+}
+
+void printHHMM(String menuStr[], unsigned long menu[], int index)
+{
+  lcd.clear();
+
+  lcd.setCursor(0, 0);
+  lcd.print(menuStr[index]);
+
+  lcd.setCursor(0, 1);
+  lcd.print(convertTimeToHHMMString(menu[index]));
+}
+
+String convertTimeToHHMMString(long totalms)
+{
+  unsigned long totalSec = (long) (totalms / 1000);
+
+  if (totalSec <= 0) {
+    return String("Please Add Time");
+  }
+
+  long remainingValue = totalSec;
+  long currentDay = totalSec / 24 / 60 / 60;
+  remainingValue = (totalSec - currentDay * 24 * 60 * 60);
+  long hr =  remainingValue / 60 / 60;
+  remainingValue -= hr * 60 * 60;
+  long minutes = remainingValue / 60;
+  remainingValue -= minutes * 60;
+  long sec = remainingValue;
+
+  String timeStr = "";
+
+  if (hr >= 10) {
+    //    Serial.print(hr);
+    //    Serial.print("h ");
+    timeStr = String(timeStr + hr + ":");
+  }
+  else {
+    timeStr = String(timeStr + "0" + hr + ":");
+  }
+
+  if (minutes >= 10) {
+    //    Serial.print(minutes);
+    //    Serial.print("m ");
+    timeStr = String(timeStr + minutes);
+  }
+  else {
+    timeStr = String(timeStr + "0" + minutes);
+  }
+
+  return timeStr;
+}
+
+void addLightTime(long timeValue) {
+  addTime(lightMenuList, subMenuLightIndex, timeValue);
+}
+
 void switchLight()
 {
-  long currentTime = formattedCurrentTime();
+  time_t timeNow = now();
+  unsigned long currentTimeValue = setHr(hour(timeNow)) * 100 + setMin(minute(timeNow)) * 1000;
+
   // hourOn < hourOff. ex. 0:00 off -> 8:00 on -> 22:00 off
-  if (currentTime >= lightOnTime && currentTime < lightOffTime) {
+  if (currentTimeValue >= lightMenuList[kLightOnTime] && currentTimeValue < lightMenuList[kLightOffTime]) {
 
     double currentEnvironmentLuxValue = getLuxValue();
     // Save electricity by turn off the light if environment is bright enough
@@ -882,6 +907,27 @@ String convertTimeToString(long totalms)
   //  Serial.println("");
 
   return timeStr;
+}
+
+void printMenuSettings(String menuStr[], unsigned long menu[], int index)
+{
+  lcd.clear();
+
+  lcd.setCursor(0, 0);
+  lcd.print(menuStr[index]);
+
+  lcd.setCursor(0, 1);
+  lcd.print(convertTimeToString(menu[index]));
+}
+
+void addTime(unsigned long menu[], int index, long timeValue)
+{
+  if (menu[index] + timeValue >= 0) {
+    menu[index] += timeValue;
+  }
+  else {
+    menu[index] = 0;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1042,6 +1088,62 @@ void printError(byte error)
       break;
     default:
       Serial.println(F("unknown error"));
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void printTemperature()
+{
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+  else {
+
+    Serial.print(F("Humidity: "));
+    Serial.print(h);
+    Serial.print("%\t");
+
+    // Read temperature as Celsius (the default)
+    float t = dht.readTemperature();
+    if (isnan(t)) {
+      Serial.println(F("Failed to read from DHT sensor!"));
+    }
+    else {
+      // Compute heat index in Celsius (isFahreheit = false)
+      float hic = dht.computeHeatIndex(t, h, false);
+
+      Serial.print(F("Temperature: "));
+      Serial.print(t);
+      Serial.print("C \t");
+
+      Serial.print(F("Heat index: "));
+      Serial.print(hic);
+      Serial.println("C ");
+    }
+
+    //    // Read temperature as Fahrenheit (isFahrenheit = true)
+    //    float f = dht.readTemperature(true);
+    //    if (isnan(f)) {
+    //      Serial.println("Failed to read from DHT sensor!");
+    //    }
+    //    else {
+    //      // Compute heat index in Celsius (isFahreheit = false)
+    //      float hif = dht.computeHeatIndex(f, h);
+    //
+    //      Serial.print("Temperature: ");
+    //      Serial.print(f);
+    //      Serial.print("F\t");
+    //
+    //      Serial.print("Heat index: ");
+    //      Serial.print(hif);
+    //      Serial.println("F");
+    //    }
   }
 }
 
