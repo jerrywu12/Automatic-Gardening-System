@@ -157,8 +157,8 @@ void loop()
     airMenu[kAiringOn] = setMin(defaultDurationOn);
     airMenu[kAiringOff] = setMin(defaultDurationOff);
 
-    lightMenuList[kLightOnTime] = setHr(5) * 100 + setMin(0);
-    lightMenuList[kLightOffTime] = setHr(20) * 100 + setMin(0);
+    lightMenuList[kLightOnTime] = setHr(5) + setMin(0);
+    lightMenuList[kLightOffTime] = setHr(20) + setMin(0);
 
     firstSession = false;
   }
@@ -801,8 +801,15 @@ void addLightTime(long timeValue) {
 void switchLight()
 {
   time_t timeNow = now();
-  unsigned long currentTimeValue = setHr(hour(timeNow)) * 100 + setMin(minute(timeNow)) * 1000;
+  unsigned long currentTimeValue = (setHr(hour(timeNow)) + setMin(minute(timeNow)));
 
+//  Serial.print("now - ");
+//  Serial.println(currentTimeValue);
+//  Serial.print("kLightOnTime - ");
+//  Serial.println(lightMenuList[kLightOnTime]);  
+//  Serial.print("kLightOffTime - ");
+//  Serial.println(lightMenuList[kLightOffTime]);
+  
   // hourOn < hourOff. ex. 0:00 off -> 8:00 on -> 22:00 off
   if (currentTimeValue >= lightMenuList[kLightOnTime] && currentTimeValue < lightMenuList[kLightOffTime]) {
 
